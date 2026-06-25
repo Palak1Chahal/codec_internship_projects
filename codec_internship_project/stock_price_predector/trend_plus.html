@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrendPulse | Stock Price Predictor</title>
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    /* CORE THEME DESIGN */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      padding: 30px 15px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+    }
+
+    h1 span {
+      color: #10b981; /* Analytics Green */
+    }
+
+    header p {
+      color: #9ca3af;
+      margin-top: 5px;
+    }
+
+    /* GRID ARCHITECTURE */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 25px;
+    }
+
+    @media (min-width: 850px) {
+      .dashboard-grid {
+        grid-template-columns: 350px 1fr;
+      }
+    }
+
+    /* CONTROLS SIDEBAR PANEL */
+    .control-panel {
+      background-color: #111827;
+      padding: 25px;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      height: fit-content;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1f2937;
+      color: #10b981;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      background-color: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: white;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="number"]:focus {
+      border-color: #10b981;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background-color: #10b981;
+      color: #0b0f19;
+      font-weight: bold;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary:hover {
+      background-color: #059669;
+    }
+
+    /* DATA MANAGEMENT BOX */
+    .data-box {
+      margin-top: 25px;
+    }
+
+    .data-list {
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: #1f2937;
+      border-radius: 6px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #374151;
+    }
+
+    /* MAIN VIEWPORT DISPLAY */
+    .display-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .metric-card {
+      background-color: #111827;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      text-align: center;
+    }
+
+    .metric-val {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    #predVal { color: #3b82f6; }
+    #trendVal { color: #10b981; }
+
+    .chart-container {
+      background-color: #111827;
+      padding: 25px;
+      border-radius: 12px;
+      border: 1px solid #1f2937;
+      position: relative;
+      height: 450px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Trend<span>Pulse</span></h1>
+      <p>Mathematical Linear Regression Engine For Stock Price Analysis</p>
+    </header>
+
+    <div class="dashboard-grid">
+      <!-- Left Panel: Input controls -->
+      <div class="control-panel">
+        <div class="panel-title">Data Parameters</div>
+        
+        <div class="input-group">
+          <label for="nextPriceInput">Add Real-Time Price ($)</label>
+          <input type="number" id="nextPriceInput" value="135" step="any">
+        </div>
+
+        <button class="btn-primary" id="addPointBtn">📈 Log Data Point</button>
+
+        <div class="data-box">
+          <label>Historical Dataset Logging</label>
+          <div class="data-list" id="dataLogList">
+            <!-- Points logged here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Output view visualization -->
+      <div class="display-panel">
+        <div class="metrics-row">
+          <div class="metric-card">
+            <label>Calculated Slope (Trend)</label>
+            <div class="metric-val" id="trendVal">0.00</div>
+          </div>
+          <div class="metric-card">
+            <label>Predicted Next Price (Day 11)</label>
+            <div class="metric-val" id="predVal">$0.00</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="predictionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Starting Baseline Historical Data Points
+    let historicalDays = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let historicalPrices = [102, 105, 103, 110, 108, 115, 120, 118, 125, 130];
+    
+    let chart;
+
+    // LEAST SQUARES MATHEMATICAL ALGORITHM ENGINE
+    function calculateLinearRegression(X, Y) {
+      const n = X.length;
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+
+      for (let i = 0; i < n; i++) {
+        sumX += X[i];
+        sumY += Y[i];
+        sumXY += X[i] * Y[i];
+        sumXX += X[i] * X[i];
+      }
+
+      // Formula for Slope: m = (n*Σ(xy) - Σx*Σy) / (n*Σ(x^2) - (Σx)^2)
+      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+      
+      // Formula for Intercept: b = (Σy - m*Σx) / n
+      const intercept = (sumY - slope * sumX) / n;
+
+      return { slope, intercept };
+    }
+
+    function processAnalysisAndRender() {
+      const totalPoints = historicalDays.length;
+      
+      // Execute math model regression calculations
+      const regression = calculateLinearRegression(historicalDays, historicalPrices);
+      
+      // Calculate continuous trend line points over past timeline
+      let regressionLineData = [];
+      for (let i = 0; i < totalPoints; i++) {
+        regressionLineData.push(regression.slope * historicalDays[i] + regression.intercept);
+      }
+
+      // Predict next immediate timeline interval point data
+      const nextDayIdx = historicalDays[totalPoints - 1] + 1;
+      const predictedPrice = (regression.slope * nextDayIdx) + regression.intercept;
+
+      // Append data forecast points to render beyond current frame boundary 
+      let extendedLabels = [...historicalDays, nextDayIdx];
+      let extendedRegressionLine = [...regressionLineData, predictedPrice];
+
+      // Format DOM node output indicators cleanly
+      document.getElementById('trendVal').innerText = (regression.slope >= 0 ? "+" : "") + regression.slope.toFixed(2);
+      document.getElementById('trendVal').style.color = regression.slope >= 0 ? "#10b981" : "#ef4444";
+      document.getElementById('predVal').innerText = "$" + predictedPrice.toFixed(2);
+
+      // Refresh text logs tracker
+      const logList = document.getElementById('dataLogList');
+      logList.innerHTML = "";
+      for(let i = totalPoints - 1; i >= 0; i--) {
+        logList.innerHTML += `<div class="data-item"><span>Day ${historicalDays[i]}:</span> <span>$${historicalPrices[i].toFixed(2)}</span></div>`;
+      }
+
+      // Handle updating or initiating Chart configuration layers
+      if (chart) {
+        chart.data.labels = extendedLabels;
+        chart.data.datasets[0].data = historicalPrices; // Scatter points
+        chart.data.datasets[1].data = extendedRegressionLine; // Math Trendline
+        chart.update();
+      } else {
+        const ctx = document.getElementById('predictionChart').getContext('2d');
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: extendedLabels,
+            datasets: [
+              {
+                label: 'Historical Actual Price',
+                data: historicalPrices,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                showLine: false // Keeps it as distinct data nodes
+              },
+              {
+                label: 'Linear Regression Forecast',
+                data: extendedRegressionLine,
+                borderColor: '#3b82f6',
+                borderDash: [5, 5], // Dotted line effect
+                pointRadius: function(context) {
+                  // highlight the forecast node specifically
+                  return context.dataIndex === context.dataset.data.length - 1 ? 8 : 0;
+                },
+                pointBackgroundColor: '#3b82f6',
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } },
+              y: { grid: { color: '#1f2937' }, ticks: { color: '#9ca3af' } }
+            },
+            plugins: {
+              legend: { labels: { color: '#f3f4f6' } }
+            }
+          }
+        });
+      }
+    }
+
+    // Capture input action events
+    document.getElementById('addPointBtn').addEventListener('click', () => {
+      const priceInput = document.getElementById('nextPriceInput');
+      const val = parseFloat(priceInput.value);
+
+      if (!isNaN(val) && val > 0) {
+        const nextDay = historicalDays[historicalDays.length - 1] + 1;
+        historicalDays.push(nextDay);
+        historicalPrices.push(val);
+        
+        // auto setup next clean recommendation entry placeholder target calculation value
+        priceInput.value = Math.round(val * (1 + (Math.random() * 0.04 - 0.02))); 
+        
+        processAnalysisAndRender();
+      }
+    });
+
+    // Run automatically on component mount execution cycles
+    processAnalysisAndRender();
+  </script>
+</body>
+</html>
